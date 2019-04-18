@@ -67,5 +67,5 @@ def plot_tri_matrix(holdkey_matrix,qtkey):
         )
     )
     
-    fig = go.Figure(data=data,layout=layout)
-    py.iplot(fig)
+    return go.Figure(data=data,layout=layout)
+    #py.iplot(fig)
