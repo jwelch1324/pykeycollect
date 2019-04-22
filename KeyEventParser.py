@@ -1,6 +1,6 @@
 import numpy as np
 import keyboard
-
+import os
 class KeyHoldDistribution(object):
     def __init__(self,key,prior,post):
         self.key = key
@@ -180,14 +180,13 @@ class TriGraphDataCollector(object):
     def SaveState(self,file_path,clear_state=False):
         #We want to save the current state of the hold key matrix
         np.save(file_path,self.holdkey_matrix)
-        if clear_state:
+        #if clear_state:
             #Remove the current reference
-            del self.holdkey_matrix
+          #  del self.holdkey_matrix
             #Recreate the holdkey matrix
-            self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
+           # self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
             
     def LoadState(self,file_path):
-        del self.holdkey_matrix
         self.holdkey_matrix = np.load(file_path)
         print("Loaded {} holdkey matrix".format(file_path))
             

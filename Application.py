@@ -4,29 +4,18 @@ import time
 import keyboard
 import pykka
 from threading import Event
+from Actors import DisplayNotificationActor
 
 import platform
 
 if platform.system() == "Windows":
     import win32api
-    import win32con
-    
-    if platform.win32_ver()[0] == '10':
-        import win10toast
-        toaster = win10toast.ToastNotifier()
-    else:
-        toaster = None
-    
+    import win32con    
     g_user = win32api.GetUserNameEx(win32con.NameSamCompatible).replace('\\','-')
 else:
     g_user = 'user'
-    toaster = None
     
 print(g_user)
-
-def DisplayNotification(title,text,icon_path=None,duration=3):
-    if toaster is not None:
-        toaster.show_toast(title,text,icon_path=icon_path,threaded=True,duration=duration)
 
 #This is a terrible hack that is needed to use the on_activate callback with pystray MenuItems... However as long as KSApplication is treated like a singleton, it is fine.
 KSAPP = None    
@@ -38,18 +27,23 @@ def on_quit(icon):
 class KSApplication(object):
     def __init__(self):
         
+        DisplayNotificationActor.start()
+        
         icon = pystray.Icon("KSCollector", menu=pystray.Menu(
             pystray.MenuItem('Enabled',on_activate,default=True,checked=lambda item: self.enabled),
             pystray.MenuItem('Quit',on_quit)))
         
-        icon.icon = self.__generate_icon()      
+        icon.icon = self.__generate_icon()
+        img = self.__generate_icon('yellow')      
+        img.save("N.ico")
         self.icon = icon
         self.sequence = None
         self.actors = []
         self.stop_event = Event()
         self.user = g_user
         self.enabled = True
-        
+        self.dnaref = pykka.ActorRegistry.get_by_class_name("DisplayNotificationActor")[0]
+        self.downKeys = {}
         #Ugly hack that needs to be fixed eventually
         global KSAPP
         KSAPP = self
@@ -59,10 +53,10 @@ class KSApplication(object):
         self.enabled = not self.enabled
         if self.enabled:
             self.icon.icon = self.__generate_icon('green')
-            DisplayNotification("KS Collector","Collecting Enabled")
+            self.dnaref.tell({"title":"KS Collector","text":"Collecting Enabled"})
         else:
             self.icon.icon = self.__generate_icon('blue')
-            DisplayNotification("KS Collector","Collecting Paused")
+            self.dnaref.tell({"title":"KS Collector","text":"Collecting Paused"})
             
     def on_quit(self,icon):
         self.stop_event.set()
@@ -90,19 +84,30 @@ class KSApplication(object):
             return
 
         event.time = time.perf_counter()
+        if (event.event_type == "down"): 
+            if (event.scan_code in self.downKeys):
+                print("Held Key {}".format(event.scan_code))
+                return
+            else:
+                self.downKeys[event.scan_code] = True
+        if (event.event_type == "up"):
+            if (event.scan_code in self.downKeys):
+                del self.downKeys[event.scan_code]
+
+            
         for actor in self.actors:
             try:
                 actor['aref'].tell({'kbe': event})
             except pykka.ActorDeadError:
                 print("Restarting Dead Actor")
-                DisplayNotification("KS Collector","Actor Died... Attempting Restart")
+                self.dnaref.tell({"title":"KS Collector","text":"Actor Died... Attempting Restart"})
                 actor['aref'] = actor['actor'].start()
                 actor['aref'].tell({'load':'{}_hkm_data.npy'.format(self.user)})
                 
     
     def __runLoop(self,icon):
         icon.visible = True
-        DisplayNotification("KS Collector","Collector Enabled")
+        self.dnaref.tell({"title":"KS Collector","text":"Collector Enabled"})
         keyboard.hook(self.__key_press_handler)
         
         tnow = time.perf_counter()
@@ -117,7 +122,7 @@ class KSApplication(object):
                         actor['aref'].tell({'stats':None})
                     except pykka.ActorDeadError:
                         print("Restarting Dead Actor")
-                        DisplayNotification("KS Collector","Actor Died... Attempting Restart")
+                        self.dnaref.tell({"title":"KS Collector","text":"Actor Died... Attempting Restart"})
                         actor['aref'] = actor['actor'].start()
                         actor['aref'].tell({'load':'{}_hkm_data.npy'.format(self.user)})
                 tnow = time.perf_counter()
@@ -125,7 +130,7 @@ class KSApplication(object):
             
         #Begin Clean Shutdown Procedure    
         print("Shutting down...")
-        DisplayNotification("KS Collector","Collector Shutting Down...")
+        self.dnaref.tell({"title":"KS Collector","text":"Collector Shutting Down..."})
         keyboard.unhook(self.__key_press_handler)
         #Tell all the actors to save their current data
         for actor in self.actors:
@@ -140,6 +145,8 @@ class KSApplication(object):
                 actor['aref'].stop() #Shutdown all actor threads
             except pykka.ActorDeadError:
                 pass
+            
+        self.dnaref.stop()
             
         print("Shutdown Complete...")
         
