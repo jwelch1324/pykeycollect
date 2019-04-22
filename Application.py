@@ -5,11 +5,28 @@ import keyboard
 import pykka
 from threading import Event
 
-def setup(icon):
-    icon.visible = True
-    time.sleep(5)
-    icon.stop()
+import platform
 
+if platform.system() == "Windows":
+    import win32api
+    import win32con
+    
+    if platform.win32_ver()[0] == '10':
+        import win10toast
+        toaster = win10toast.ToastNotifier()
+    else:
+        toaster = None
+    
+    g_user = win32api.GetUserNameEx(win32con.NameSamCompatible).replace('\\','-')
+else:
+    g_user = 'user'
+    toaster = None
+    
+print(g_user)
+
+def DisplayNotification(title,text,icon_path=None,duration=3):
+    if toaster is not None:
+        toaster.show_toast(title,text,icon_path=icon_path,threaded=True,duration=duration)
 
 #This is a terrible hack that is needed to use the on_activate callback with pystray MenuItems... However as long as KSApplication is treated like a singleton, it is fine.
 KSAPP = None    
@@ -30,7 +47,7 @@ class KSApplication(object):
         self.sequence = None
         self.actors = []
         self.stop_event = Event()
-        self.user = 'user'
+        self.user = g_user
         self.enabled = True
         
         #Ugly hack that needs to be fixed eventually
@@ -42,8 +59,10 @@ class KSApplication(object):
         self.enabled = not self.enabled
         if self.enabled:
             self.icon.icon = self.__generate_icon('green')
+            DisplayNotification("KS Collector","Collecting Enabled")
         else:
             self.icon.icon = self.__generate_icon('blue')
+            DisplayNotification("KS Collector","Collecting Paused")
             
     def on_quit(self,icon):
         self.stop_event.set()
@@ -60,7 +79,10 @@ class KSApplication(object):
         return image
     
     def AddActor(self,actor):
-        self.actors.append(actor.start())
+        aref = actor.start()
+        aref.tell({'load':'{}_hkm_data.npy'.format(self.user)})
+        adata = {'actor':actor,'aref':aref,'err':False}
+        self.actors.append(adata)
     
     def __key_press_handler(self,event):
         #If we are not collecting then simply skip this event
@@ -69,17 +91,19 @@ class KSApplication(object):
 
         event.time = time.perf_counter()
         for actor in self.actors:
-            actor.tell({'kbe': event})
-            
-    def __check_esc_key(self,event):
-        if event.name == 'esc':
-            self.stop_event.set()
+            try:
+                actor['aref'].tell({'kbe': event})
+            except pykka.ActorDeadError:
+                print("Restarting Dead Actor")
+                DisplayNotification("KS Collector","Actor Died... Attempting Restart")
+                actor['aref'] = actor['actor'].start()
+                actor['aref'].tell({'load':'{}_hkm_data.npy'.format(self.user)})
+                
     
     def __runLoop(self,icon):
         icon.visible = True
-        
+        DisplayNotification("KS Collector","Collector Enabled")
         keyboard.hook(self.__key_press_handler)
-        keyboard.hook(self.__check_esc_key)
         
         tnow = time.perf_counter()
         
@@ -88,21 +112,35 @@ class KSApplication(object):
             tend = time.perf_counter()
             if (tend-tnow) > 15:
                 for actor in self.actors:
-                    actor.tell({'save':'{}_hkm_data'.format(self.user)})
-                    actor.tell({'stats':None})
+                    try:
+                        actor['aref'].tell({'save':'{}_hkm_data.npy'.format(self.user)})
+                        actor['aref'].tell({'stats':None})
+                    except pykka.ActorDeadError:
+                        print("Restarting Dead Actor")
+                        DisplayNotification("KS Collector","Actor Died... Attempting Restart")
+                        actor['aref'] = actor['actor'].start()
+                        actor['aref'].tell({'load':'{}_hkm_data.npy'.format(self.user)})
                 tnow = time.perf_counter()
             time.sleep(0.5)
             
         #Begin Clean Shutdown Procedure    
         print("Shutting down...")
+        DisplayNotification("KS Collector","Collector Shutting Down...")
         keyboard.unhook(self.__key_press_handler)
-        keyboard.unhook(self.__check_esc_key)
         #Tell all the actors to save their current data
         for actor in self.actors:
-            actor.tell({'save':'{}_hkm_data'.format(self.user)})
+            try:
+                actor['aref'].tell({'save':'{}_hkm_data'.format(self.user)})
+            except pykka.ActorDeadError:
+                #Nothing we can do at this point... sadly we will have lost some data from the past 15 seconds
+                pass
         time.sleep(3) #Time to allow actors to save
         for actor in self.actors:
-            actor.stop() #Shutdown all actor threads
+            try:
+                actor['aref'].stop() #Shutdown all actor threads
+            except pykka.ActorDeadError:
+                pass
+            
         print("Shutdown Complete...")
         
         icon.visible = False

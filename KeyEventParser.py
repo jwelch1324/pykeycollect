@@ -186,5 +186,10 @@ class TriGraphDataCollector(object):
             #Recreate the holdkey matrix
             self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
             
+    def LoadState(self,file_path):
+        del self.holdkey_matrix
+        self.holdkey_matrix = np.load(file_path)
+        print("Loaded {} holdkey matrix".format(file_path))
+            
     def PrintStats(self):
         print("Collected {} keys so far".format(self.num_keys_collected))

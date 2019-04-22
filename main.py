@@ -8,5 +8,5 @@ import Actors
 #Create the application and start running in the background.
 
 app = KSApplication()
-app.AddActor(Actors.TriGraphHoldTimeActor)
+app.AddActor(Actors.TriGraphHoldTimeActor())
 app.run()

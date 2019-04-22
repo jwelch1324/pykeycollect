@@ -6,6 +6,7 @@ from keyboard import _os_keyboard
 import KeyEventParser
 from KeyEventParser import vkconvert
 import Plotting.plot_funcs as pf
+import os
 
 class DataSaveActor(pykka.ThreadingActor):
     def __init__(self, key_collector_ref):
@@ -17,6 +18,12 @@ class TriGraphHoldTimeActor(pykka.ThreadingActor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.key_collector = KeyEventParser.TriGraphDataCollector()
+        self.name = "TGHT"
+        
+    def on_failure(self, exception_type, exception_value, traceback):
+        print("Failure! {}".format(exception_type))
+        with open("err.log",'a') as f:
+            f.writelines(["Failure! {}:{}".format(exception_type,exception_value)])
     
     def on_receive(self, message):
         super().on_receive(message)
@@ -36,10 +43,17 @@ class TriGraphHoldTimeActor(pykka.ThreadingActor):
             file_path = message['save']
             if not file_path.endswith(".npy"):
                 file_path += ".npy"
+            file_path = "{}_{}".format(self.name,file_path)
             cos = False
             if 'clear_on_save' in message:
                 cos = message['clear_on_save']
             self.key_collector.SaveState(file_path,cos)
+        if 'load' in message:
+            file_path = message['load']
+            file_path = "{}_{}".format(self.name,file_path)
+            print("Attemping to load {}".format(file_path))
+            if os.path.exists(file_path):
+                self.key_collector.LoadState(file_path)
         if 'stats' in message:
             self.key_collector.PrintStats()
     
