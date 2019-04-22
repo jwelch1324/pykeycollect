@@ -2,16 +2,10 @@ import pykka
 import numpy as np
 from keyboard import KeyboardEvent
 from keyboard import _os_keyboard
-from KeyEventParser import KeyDataCollector, vkconvert
+#from KeyEventParser import TriGraphDataCollector, vkconvert
+import KeyEventParser
+from KeyEventParser import vkconvert
 import Plotting.plot_funcs as pf
-
-class Greeter(pykka.ThreadingActor):
-    def on_receive(self, message):
-        super().on_receive(message)
-        print("Hi There!")
-        print(message)
-        return message['msg']
-
 
 class DataSaveActor(pykka.ThreadingActor):
     def __init__(self, key_collector_ref):
@@ -19,10 +13,10 @@ class DataSaveActor(pykka.ThreadingActor):
         self.key_collector_ref = key_collector_ref
 
 
-class KeyboardActor(pykka.ThreadingActor):
+class TriGraphHoldTimeActor(pykka.ThreadingActor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.key_collector = KeyDataCollector()
+        self.key_collector = KeyEventParser.TriGraphDataCollector()
     
     def on_receive(self, message):
         super().on_receive(message)
@@ -40,6 +34,8 @@ class KeyboardActor(pykka.ThreadingActor):
             pf.plot_tri_matrix(self.key_collector.holdkey_matrix,vkconvert)
         if 'save' in message:
             file_path = message['save']
+            if not file_path.endswith(".npy"):
+                file_path += ".npy"
             cos = False
             if 'clear_on_save' in message:
                 cos = message['clear_on_save']

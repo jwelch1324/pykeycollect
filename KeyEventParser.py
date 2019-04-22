@@ -165,10 +165,8 @@ class GroupingBuffer(object):
                     print("Popping the top event and setting the delete flag on {} since it seems to be stuck".format(s_down.key))
                     self.events[0].delete = True
                     s_down.delete = True
-                    
-                    
-                    
-class KeyDataCollector(object):
+
+class TriGraphDataCollector(object):
     def __init__(self):
         self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
         self.grp_buffer = GroupingBuffer(self.holdkey_matrix)
