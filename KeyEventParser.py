@@ -68,6 +68,9 @@ class VKKeyCode2KeyStoreKeyCode(object):
     def get_key(self,code):
         return next(key for key, value in self.lookup.items() if value == code)
     
+    def get_n_keys(self):
+        return len(self.dict.keys())
+    
 vkconvert = VKKeyCode2KeyStoreKeyCode()
     
 class GroupingBuffer(object):
@@ -157,7 +160,7 @@ class GroupingBuffer(object):
                 if (prior is not None) & (key is not None) & (post is not None):
                     #Add this to the holdkey matrix
                     #print("Adding key data {} {} {}".format(prior,key,post))
-                    self.holdkey_matrix[prior,key,post].AddTiming(1000*(s_up.time-s_down.time))
+                    self.holdkey_matrix.get_key_distribution(prior,key,post).AddTiming(1000*(s_up.time-s_down.time))
             else:
                 #It is likely the case that we have a stuck key, so allow this to go on
                 #until we have 10 down events queued, then pop the top down event and set the second down event to delete to un stick it
@@ -168,7 +171,7 @@ class GroupingBuffer(object):
 
 class TriGraphDataCollector(object):
     def __init__(self):
-        self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
+        self.holdkey_matrix = HoldKeyMatrix(vkconvert.get_n_keys())
         self.grp_buffer = GroupingBuffer(self.holdkey_matrix)
         self.num_keys_collected = 0
         
@@ -179,7 +182,7 @@ class TriGraphDataCollector(object):
         
     def SaveState(self,file_path,clear_state=False):
         #We want to save the current state of the hold key matrix
-        np.save(file_path,self.holdkey_matrix)
+        self.holdkey_matrix.save_state(file_path)                
         #if clear_state:
             #Remove the current reference
           #  del self.holdkey_matrix
@@ -187,8 +190,31 @@ class TriGraphDataCollector(object):
            # self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
             
     def LoadState(self,file_path):
-        self.holdkey_matrix = np.load(file_path)
+        self.holdkey_matrix.load_state(file_path)
         print("Loaded {} holdkey matrix".format(file_path))
-            
     def PrintStats(self):
-        print("Collected {} keys so far".format(self.num_keys_collected))
+        print("Collected {} keys so far\n Holdkey contains {} Events".format(self.num_keys_collected,self.holdkey_matrix.number_of_total_events()))
+        
+        
+class HoldKeyMatrix(object):
+    def __init__(self, n_keys):
+        self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(n_keys)] for b in range(n_keys)] for c in range(n_keys)])
+        self.n_keys = n_keys
+        
+    def save_state(self, file_path):
+        np.save(file_path,self.holdkey_matrix)
+        
+    def load_state(self,file_path):
+        self.holdkey_matrix = np.load(file_path,allow_pickle=True).copy()
+        
+    def get_key_distribution(self, prior,key,post):
+        if (prior <= self.n_keys) & (key <= self.n_keys) & (post <= self.n_keys):
+            return self.holdkey_matrix[prior,key,post]
+        
+    def number_of_total_events(self):
+        n_timing = 0
+        for i in range(self.n_keys):
+            for j in range(self.n_keys):
+                for k in range(self.n_keys):
+                    n_timing += len(self.holdkey_matrix[i,j,k].timings)
+        return n_timing

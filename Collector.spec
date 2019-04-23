@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['main.py'],
+a = Analysis(['Collector.py'],
              pathex=['D:\\Code\\KSDataCollector\\KeyboardBackend'],
              binaries=[],
              datas=[],
@@ -21,16 +21,16 @@ exe = EXE(pyz,
           a.scripts,
           [],
           exclude_binaries=True,
-          name='main',
+          name='Collector',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
+          console=False )
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
                a.datas,
                strip=False,
                upx=True,
-               name='main')
+               name='Collector')
