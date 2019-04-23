@@ -31,32 +31,33 @@ def _DisplayNotification(title, text, icon_path=None, duration=3):
         )
 
 
-class DataSaveActor(pykka.ThreadingActor):
-    def __init__(self, key_collector_ref):
+class DataStoreActor(Actor):
+    def __init__(self):
         super().__init__()
-        self.key_collector_ref = key_collector_ref
+        self.db = {}
+        
+    def receiveMessage(self, msg, sender):
+        if isinstance(msg, dict):
+            if 'set' in msg:
+                kv = msg['set']
+                for k,v in kv.items():
+                    self.db[k] = v
+            if 'get' in msg:
+                key = msg['get']
+                if key in self.db:
+                    self.send(sender,self.db[key])
+                else:
+                    self.send(sender,None)
 
 
 class DisplayNotificationActorNew(Actor):
     def receiveMessage(self, message, sender):
-        title = message["title"] if "title" in message else "Notification"
-        text = message["text"] if "text" in message else ""
-        icon_path = message["icon_path"] if "icon_path" in message else "N.ico"
-        duration = message["duration"] if "duration" in message else 1
-        _DisplayNotification(title, text, icon_path, duration)        
-
-
-class DisplayNotificationActor(pykka.ThreadingActor):
-    def __init__(self):
-        super().__init__()
-
-    def on_receive(self, message):
-        super().on_receive(message)
-        title = message["title"] if "title" in message else "Notification"
-        text = message["text"] if "text" in message else ""
-        icon_path = message["icon_path"] if "icon_path" in message else "N.ico"
-        duration = message["duration"] if "duration" in message else 1
-        _DisplayNotification(title, text, icon_path, duration)
+        if isinstance(message, dict):
+            title = message["title"] if "title" in message else "Notification"
+            text = message["text"] if "text" in message else ""
+            icon_path = message["icon_path"] if "icon_path" in message else "N.ico"
+            duration = message["duration"] if "duration" in message else 1
+            _DisplayNotification(title, text, icon_path, duration)
 
 
 class TriGraphHoldTimeActorNew(Actor):
@@ -64,12 +65,12 @@ class TriGraphHoldTimeActorNew(Actor):
         super().__init__(*args, **kwargs)
         self.key_collector = KeyEventParser.TriGraphDataCollector()
         self.name = "TGHT"
+        self.configured = False
 
-    def receiveMessage(self, message, sender):
+    def receiveMessage(self, message, sender):       
         if isinstance(message, dict):
             if "kbe" in message:
                 e = message["kbe"]
-                print(e)
                 if e.event_type == "up":
                     e.event_type = "U"
                 elif e.event_type == "down":
@@ -77,6 +78,8 @@ class TriGraphHoldTimeActorNew(Actor):
                 else:
                     print("Unknown event")
                     return
+                if e.scan_code < 0:
+                    return #This happens e.g. when in a remote desktop session... for some reason it sends a -255 scan code
                 self.key_collector.AddEvent(
                     _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
                 )
@@ -93,72 +96,14 @@ class TriGraphHoldTimeActorNew(Actor):
                 if "clear_on_save" in message:
                     cos = message["clear_on_save"]
                 self.key_collector.SaveState(file_path, cos)
+                
             if "load" in message:
                 file_path = message["load"]
                 file_path = "{}_{}".format(self.name, file_path)
                 print("Attemping to load {}".format(file_path))
                 if os.path.exists(file_path):
                     self.key_collector.LoadState(file_path)
+                self.configured = True
+                    
             if "stats" in message:
                 self.key_collector.PrintStats()
-
-
-class TriGraphHoldTimeActor(pykka.ThreadingActor):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.key_collector = KeyEventParser.TriGraphDataCollector()
-        self.name = "TGHT"
-        self.dnaref = pykka.ActorRegistry.get_by_class_name("DisplayNotificationActor")[0]
-        # self.dnaref.tell({"title":"KS Collector TGHT","text":"TriGraph Hold Time Collector Activated"})
-
-    def on_failure(self, exception_type, exception_value, traceback):
-        print("Failure! {}".format(exception_type))
-        self.dnaref.tell(
-            {
-                "title": "KS Collector TGHT Error!",
-                "text": "{}:{}".format(exception_type, exception_value),
-            }
-        )
-        with open("err.log", "a") as f:
-            f.writelines(
-                ["Failure! {}:{}:{}".format(exception_type, exception_value, traceback)]
-            )
-
-    def on_receive(self, message):
-        super().on_receive(message)
-        if "kbe" in message:
-            e = message["kbe"]
-            print(e)
-            if e.event_type == "up":
-                e.event_type = "U"
-            elif e.event_type == "down":
-                e.event_type = "D"
-            else:
-                print("Unknown event")
-                return
-            self.key_collector.AddEvent(
-                _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
-            )
-
-        # if 'plt' in message:
-        #    pf.plot_tri_matrix(self.key_collector.holdkey_matrix,vkconvert)
-
-        if "save" in message:
-            file_path = message["save"]
-            if not file_path.endswith(".npy"):
-                file_path += ".npy"
-            file_path = "{}_{}".format(self.name, file_path)
-            cos = False
-            if "clear_on_save" in message:
-                cos = message["clear_on_save"]
-            self.key_collector.SaveState(file_path, cos)
-
-        if "load" in message:
-            file_path = message["load"]
-            file_path = "{}_{}".format(self.name, file_path)
-            print("Attemping to load {}".format(file_path))
-            if os.path.exists(file_path):
-                self.key_collector.LoadState(file_path)
-
-        if "stats" in message:
-            self.key_collector.PrintStats()

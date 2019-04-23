@@ -4,7 +4,9 @@ import time
 import keyboard
 import pykka
 from threading import Event
-from Actors import DisplayNotificationActor
+from Actors import *
+
+from thespian.actors import Actor, ActorSystem, ActorAddress, ActorExitRequest
 
 import platform
 
@@ -30,11 +32,8 @@ def on_quit(icon):
     KSAPP.on_quit(icon)
 
 
-class KSApplication(object):
+class KSApplication(Actor):
     def __init__(self):
-
-        DisplayNotificationActor.start()
-
         icon = pystray.Icon(
             "KSCollector",
             menu=pystray.Menu(
@@ -57,7 +56,8 @@ class KSApplication(object):
         self.stop_event = Event()
         self.user = g_user
         self.enabled = True
-        self.dnaref = pykka.ActorRegistry.get_by_class_name("DisplayNotificationActor")[0]
+        self.dnaref = ActorSystem().createActor(DisplayNotificationActorNew, globalName="DisplayNotification")
+        self.datastore = ActorSystem().createActor(DataStoreActor, globalName="DataStore")
         self.downKeys = {}
         # Ugly hack that needs to be fixed eventually
         global KSAPP
@@ -67,14 +67,14 @@ class KSApplication(object):
         self.enabled = not self.enabled
         if self.enabled:
             self.icon.icon = self.__generate_icon("green")
-            self.dnaref.tell(
+            ActorSystem().tell(self.dnaref,
                 {
                     "title": "KS Collector", 
                     "text": "Collecting Enabled"
                 })
         else:
             self.icon.icon = self.__generate_icon("blue")
-            self.dnaref.tell(
+            ActorSystem().tell(self.dnaref,
                 {
                     "title": "KS Collector", 
                     "text": "Collecting Paused"
@@ -94,10 +94,21 @@ class KSApplication(object):
         dc.rectangle((0, height // 2, width // 2, height), fill=color)
         return image
 
-    def add_actor(self, actor):
-        aref = actor.start()
-        aref.tell({"load": "{}_hkm_data.npy".format(self.user)})
-        adata = {"actor": actor, "aref": aref, "err": False}
+    def add_actor(self, actor_name):     
+        class_str = actor_name
+        aref = None
+        try:
+            aref = ActorSystem().createActor(eval(class_str))
+        except NameError:
+            try:
+                class_str = "Actors.{}".format(class_str)
+                aref = ActorSystem().createActor(eval(class_str))
+            except NameError:
+                print("Error: Actor Class {} not found".format(actor_name))
+                return
+            
+        ActorSystem().tell(aref,{"load": "{}_hkm_data.npy".format(self.user)})
+        adata = {'actor':class_str, 'aref':aref}
         self.actors.append(adata)
 
     def __key_press_handler(self, event):
@@ -117,22 +128,11 @@ class KSApplication(object):
                 del self.downKeys[event.scan_code]
 
         for actor in self.actors:
-            try:
-                actor["aref"].tell({"kbe": event})
-            except pykka.ActorDeadError:
-                print("Restarting Dead Actor")
-                self.dnaref.tell(
-                    {
-                        "title": "KS Collector",
-                        "text": "Actor Died... Attempting Restart",
-                    }
-                )
-                actor["aref"] = actor["actor"].start()
-                actor["aref"].tell({"load": "{}_hkm_data.npy".format(self.user)})
+            ActorSystem().tell(actor['aref'],{"kbe": event})
 
     def __runLoop(self, icon):
         icon.visible = True
-        self.dnaref.tell({"title": "KS Collector", "text": "Collector Enabled"})
+        ActorSystem().tell(self.dnaref,{"title": "KS Collector", "text": "Collector Enabled"})
         keyboard.hook(self.__key_press_handler)
 
         tnow = time.perf_counter()
@@ -142,47 +142,26 @@ class KSApplication(object):
             tend = time.perf_counter()
             if (tend - tnow) > 15:
                 for actor in self.actors:
-                    try:
-                        actor["aref"].tell(
-                            {"save": "{}_hkm_data.npy".format(self.user)}
-                        )
-                        actor["aref"].tell({"stats": None})
-                    except pykka.ActorDeadError:
-                        print("Restarting Dead Actor")
-                        self.dnaref.tell(
-                            {
-                                "title": "KS Collector",
-                                "text": "Actor Died... Attempting Restart",
-                            }
-                        )
-                        actor["aref"] = actor["actor"].start()
-                        actor["aref"].tell(
-                            {"load": "{}_hkm_data.npy".format(self.user)}
-                        )
+                    ActorSystem().tell(actor["aref"],
+                        {"save": "{}_hkm_data.npy".format(self.user)}
+                    )
+                    ActorSystem().tell(actor["aref"],{"stats": None})
                 tnow = time.perf_counter()
             time.sleep(0.5)
 
         # Begin Clean Shutdown Procedure
         print("Shutting down...")
-        self.dnaref.tell(
+        ActorSystem().tell(self.dnaref,
             {"title": "KS Collector", "text": "Collector Shutting Down..."}
         )
         keyboard.unhook(self.__key_press_handler)
         # Tell all the actors to save their current data
         for actor in self.actors:
-            try:
-                actor["aref"].tell({"save": "{}_hkm_data".format(self.user)})
-            except pykka.ActorDeadError:
-                # Nothing we can do at this point... sadly we will have lost some data from the past 15 seconds
-                pass
+            ActorSystem().tell(actor["aref"],{"save": "{}_hkm_data".format(self.user)})
         time.sleep(3)  # Time to allow actors to save
         for actor in self.actors:
-            try:
-                actor["aref"].stop()  # Shutdown all actor threads
-            except pykka.ActorDeadError:
-                pass
-
-        self.dnaref.stop()
+            ActorSystem().tell(actor["aref"], ActorExitRequest())  # Shutdown all actor threads
+        ActorSystem().tell(self.dnaref,ActorExitRequest())
 
         print("Shutdown Complete...")
 
