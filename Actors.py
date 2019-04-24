@@ -23,6 +23,7 @@ if platform.system() == "Windows":
 else:
     toaster = None
 
+print(_os_keyboard.scan_code_to_vk.keys())
 
 def _DisplayNotification(title, text, icon_path=None, duration=3):
     if toaster is not None:
@@ -66,6 +67,9 @@ class TriGraphHoldTimeActorNew(Actor):
         self.key_collector = KeyEventParser.TriGraphDataCollector()
         self.name = "TGHT"
         self.configured = False
+        if 65 not in _os_keyboard.scan_code_to_vk:
+            print("Setting up VK Tables")
+            _os_keyboard._setup_name_tables()
 
     def receiveMessage(self, message, sender):       
         if isinstance(message, dict):
@@ -83,7 +87,7 @@ class TriGraphHoldTimeActorNew(Actor):
                     #My guess is it is to notify the hook that it is losing ownership...?
                     return 
                 #print(e.name, _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type)
-                self.key_collector.AddEvent(
+                self.key_collector.add_event(
                     _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
                 )
 
@@ -98,15 +102,15 @@ class TriGraphHoldTimeActorNew(Actor):
                 cos = False
                 if "clear_on_save" in message:
                     cos = message["clear_on_save"]
-                self.key_collector.SaveState(file_path, cos)
+                self.key_collector.save_state(file_path, cos)
                 
             if "load" in message:
                 file_path = message["load"]
                 file_path = "{}_{}".format(self.name, file_path)
                 print("Attemping to load {}".format(file_path))
                 if os.path.exists(file_path):
-                    self.key_collector.LoadState(file_path)
+                    self.key_collector.load_state(file_path)
                 self.configured = True
                     
             if "stats" in message:
-                self.key_collector.PrintStats()
+                self.key_collector.print_stats()

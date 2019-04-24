@@ -181,7 +181,7 @@ class GroupingBuffer(object):
                 if (prior is not None) & (key is not None) & (post is not None):
                     #Add this to the holdkey matrix
                     #print("Adding key data {} {} {}".format(prior,key,post))
-                    self.holdkey_matrix.get_key_distribution(prior,key,post).AddTiming(1000*(s_up.time-s_down.time))
+                    self.holdkey_matrix.get_key_distribution(prior,key,post).add_timing(1000*(s_up.time-s_down.time))
             else:
                 #It is likely the case that we have a stuck key, so allow this to go on
                 #until we have 10 down events queued, then pop the top down event and set the second down event to delete to un stick it
