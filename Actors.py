@@ -79,7 +79,10 @@ class TriGraphHoldTimeActorNew(Actor):
                     print("Unknown event")
                     return
                 if e.scan_code < 0:
-                    return #This happens e.g. when in a remote desktop session... for some reason it sends a -255 scan code
+                    #This happens e.g. when in a remote desktop session... for some reason it sends a -255 scan code
+                    #My guess is it is to notify the hook that it is losing ownership...?
+                    return 
+                #print(e.name, _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type)
                 self.key_collector.AddEvent(
                     _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
                 )

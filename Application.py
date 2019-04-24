@@ -2,7 +2,6 @@ from PIL import Image, ImageDraw
 import pystray
 import time
 import keyboard
-import pykka
 from threading import Event
 from Actors import *
 
