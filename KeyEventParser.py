@@ -43,12 +43,16 @@ class VKKeyCode2KeyStoreKeyCode(object):
         final_lookup = {**alphabet_lookup, **numeric_lookup}
         
         #Add in shift and return keys
-        for i in [16777248, 16777220]:
+        for i in [160, 161, 162, 13, 164, 9]:
             final_dict[i] = len(final_dict)
             
-        final_lookup['Shift'] = 36
-        final_lookup['Return'] = 37
-        final_lookup['Enter'] = 37
+        final_lookup['LShift'] = 36
+        final_lookup['RShift'] = 37
+        final_lookup['Ctrl'] = 38
+        final_lookup['Return'] = 39
+        final_lookup['Enter'] = 39
+        final_lookup['Alt'] = 40
+        final_lookup['Tab'] = 41
 
         self.dict = final_dict
         self.lookup = final_lookup
