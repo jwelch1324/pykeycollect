@@ -8,10 +8,10 @@ class KeyHoldDistribution(object):
         self.post = post
         self.timings = []
 
-    def AddTiming(self,timing):
+    def add_timing(self,timing):
         self.timings.append(timing)
         
-    def AddTimingList(self,timinglist):
+    def add_timing_list(self,timinglist):
         self.timings.extend(timinglist)
 
     def get_times_ms(self):
@@ -22,6 +22,23 @@ class KeyHoldDistribution(object):
 
     def get_times_sec(self):
         return self.timings
+    
+    def __add__(self, other):
+        #We want to combine two KeyHoldDistributions
+        # We will only combine them if they are for the same key set
+        assert  not ((self.key != other.key) | (self.prior != other.prior) | (self.post != other.post)), "Key Distributions must be for the same key sets to be combined!"        
+        
+        newdist = KeyHoldDistribution(self.key,self.prior,self.post)
+        newdist.add_timing_list(self.timings)
+        newdist.add_timing_list(other.timings)
+        return newdist
+    
+    def __eq__(self,other):
+        if ((self.key != other.key) | (self.prior != other.prior) | (self.post != other.post)):
+            return False
+        if len(self.timings) != len(other.timings):
+            return False
+        return (sorted(self.timings) == sorted(other.timings))
 
 class BufferEventElement(object):
     def __init__(self,key,action,time):
@@ -88,7 +105,7 @@ class GroupingBuffer(object):
         self.holdkey_matrix = holdkey_matrix
 
 
-    def GetEventOffset(self, action, pos):
+    def get_event_offset(self, action, pos):
         """
         Args:
             action: 'D' or 'U'
@@ -102,7 +119,7 @@ class GroupingBuffer(object):
                     return self.events[i]
         return None
 
-    def GetEventKey(self, action, key, start_time=None):
+    def get_event_key(self, action, key, start_time=None):
         """
         Args:
             action: 'D' or 'U'
@@ -117,7 +134,7 @@ class GroupingBuffer(object):
                     return self.events[i]
         return None
 
-    def AddEvent(self,buffer_event):
+    def add_event(self,buffer_event):
         #if len(self.events) > 0:
         if self.events: #Check if the list is empty or not
             #pop all the deleted or Up actions from the start of the list
@@ -139,17 +156,17 @@ class GroupingBuffer(object):
         #Check if there are 4 Down events in the buffer
         if self.num_downs >= 4:
             #Check if the second down event has a corresponding up event
-            s_down = self.GetEventOffset('D', 2)
-            s_up = self.GetEventKey('U',s_down.key)
+            s_down = self.get_event_offset('D', 2)
+            s_up = self.get_event_key('U',s_down.key)
 
             if (s_up is not None):
                 if (s_up.time < s_down.time):
                     #This likely means that we are looking at a double letter press
-                    s_up = self.GetEventKey('U',s_down.key,s_down.time)
+                    s_up = self.get_event_key('U',s_down.key,s_down.time)
 
             if (s_down is not None) & (s_up is not None):
-                f_down = self.GetEventOffset('D', 1)
-                a_down = self.GetEventOffset('D', 3)
+                f_down = self.get_event_offset('D', 1)
+                a_down = self.get_event_offset('D', 3)
 
                 if a_down is None:
                     for e in self.events:
@@ -179,12 +196,12 @@ class TriGraphDataCollector(object):
         self.grp_buffer = GroupingBuffer(self.holdkey_matrix)
         self.num_keys_collected = 0
         
-    def AddEvent(self, scan_code, action, time):
+    def add_event(self, scan_code, action, time):
         #self.grp_buffer.AddEvent(BufferEventElement(_os_keyboard.scan_code_to_vk[e.scan_code],e.event_type,e.time))
-        self.grp_buffer.AddEvent(BufferEventElement(scan_code, action, time))
+        self.grp_buffer.add_event(BufferEventElement(scan_code, action, time))
         self.num_keys_collected += 1
         
-    def SaveState(self,file_path,clear_state=False):
+    def save_state(self,file_path,clear_state=False):
         #We want to save the current state of the hold key matrix
         self.holdkey_matrix.save_state(file_path)                
         #if clear_state:
@@ -193,10 +210,11 @@ class TriGraphDataCollector(object):
             #Recreate the holdkey matrix
            # self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(38)] for b in range(38)] for c in range(38)])
             
-    def LoadState(self,file_path):
+    def load_state(self,file_path):
         self.holdkey_matrix.load_state(file_path)
         print("Loaded {} holdkey matrix".format(file_path))
-    def PrintStats(self):
+        
+    def print_stats(self):
         print("Collected {} keys so far\n Holdkey contains {} Events".format(self.num_keys_collected,self.holdkey_matrix.number_of_total_events()))
         
         
@@ -222,3 +240,12 @@ class HoldKeyMatrix(object):
                 for k in range(self.n_keys):
                     n_timing += len(self.holdkey_matrix[i,j,k].timings)
         return n_timing
+    
+    def __add__(self,other):
+        assert (self.holdkey_matrix.shape == other.holdkey_matrix.shape), "Holdkey matricies must be the same shape to combine!"
+        assert (self.n_keys == other.n_keys), "Holdkey matrices must support the same number of keys to combine!"
+        hkm_new = HoldKeyMatrix(self.n_keys)
+        hkm_new.holdkey_matrix = (self.holdkey_matrix + other.holdkey_matrix)
+        return hkm_new
+                
+            
