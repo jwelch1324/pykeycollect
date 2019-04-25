@@ -14,3 +14,4 @@ if __name__ == "__main__":
     app = KSApplication()
     app.add_actor("TriGraphHoldTimeActorNew")
     app.run()
+    asys.shutdown()
