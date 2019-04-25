@@ -1,6 +1,4 @@
-import pykka
 from thespian.actors import Actor
-import numpy as np
 from keyboard import KeyboardEvent
 from keyboard import _os_keyboard
 

@@ -1,4 +1,7 @@
-import numpy as np
+#import numpy as np
+from numpy import save as npsave
+from numpy import load as npload
+from numpy import array as nparray
 import keyboard
 import os
 class KeyHoldDistribution(object):
@@ -220,14 +223,14 @@ class TriGraphDataCollector(object):
         
 class HoldKeyMatrix(object):
     def __init__(self, n_keys):
-        self.holdkey_matrix = np.array([[[KeyHoldDistribution(b,c,a) for a in range(n_keys)] for b in range(n_keys)] for c in range(n_keys)])
+        self.holdkey_matrix = nparray([[[KeyHoldDistribution(b,c,a) for a in range(n_keys)] for b in range(n_keys)] for c in range(n_keys)])
         self.n_keys = n_keys
         
     def save_state(self, file_path):
-        np.save(file_path,self.holdkey_matrix)
+        npsave(file_path,self.holdkey_matrix)
         
     def load_state(self,file_path):
-        self.holdkey_matrix = np.load(file_path,allow_pickle=True).copy()
+        self.holdkey_matrix = npload(file_path,allow_pickle=True).copy()
         
     def get_key_distribution(self, prior,key,post):
         if (prior <= self.n_keys) & (key <= self.n_keys) & (post <= self.n_keys):
