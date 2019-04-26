@@ -10,7 +10,8 @@ class Hello(Actor):
         if isinstance(msg, dict):
             #print(msg.keys())
             if 'die' in msg:
-                raise NotImplementedError()
+                #raise NotImplementedError()
+                pass
             if 'szzz' in msg:
                 self.zzz = msg['szzz']
                 return
