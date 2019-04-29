@@ -18,8 +18,10 @@ class Registrar(ActorTypeDispatcher):
 
     def receiveMsg_InitPacket(self, msg, sender):
         self.notifyOnSystemRegistrationChanges(True)
+        print("Listening for System Registration Notifications")
 
     def receiveMsg_ActorExitRequest(self, msg, sender):
+        print("Shutting Down Registrar")
         self.notifyOnSystemRegistrationChanges(False)
         self.participants.clear()
         self.actor_systems.clear()
@@ -39,9 +41,13 @@ class Registrar(ActorTypeDispatcher):
         else:
             messages.AddressResponse(False, None)
 
-    def receiveMsg_ActorSystemConventionUpdate(self, msg:ActorSystemConventionUpdate, sender):
+    def receiveMsg_ActorSystemConventionUpdate(self, msg: ActorSystemConventionUpdate, sender):
         if msg.remoteAdded:
             # A new actor system was registered with the convention
-            # remote create an rnode actor
-
+            uuid = msg.remoteCapabilities.get('uuid', None)
+            if uuid is None:
+                print("New Actor System Registered without UUID")
+            else:
+                print("New Actor System Registered uuid:{}".format(uuid))
+                self.rnodes[uuid] = self.createActor("Actors.RegistrarActor", {'uuid': uuid}, 'rnode')
 

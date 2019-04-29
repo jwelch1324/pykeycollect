@@ -6,6 +6,10 @@ class LogActor(ActorTypeDispatcher):
         super().__init__()
         print("Log Actor Started")
 
+    @staticmethod
+    def actorSystemCapabilityCheck(capabilities, requirements):
+        return capabilities.get('Blarg', None) == requirements['Blarg']
+
     def receiveMsg_str(self, msg, sender):
         if msg == 'init':
             self.notifyOnSystemRegistrationChanges(True)
@@ -21,3 +25,15 @@ class LogActor(ActorTypeDispatcher):
         print(msg.remoteAdminAddress)
         print(msg.remoteCapabilities)
         print(msg.remoteAdded)
+
+
+class RegistrarActor(ActorTypeDispatcher):
+    def __init__(self):
+        print("Rnode actor started")
+
+    @staticmethod
+    def actorSystemCapabilityCheck(capabilities, requirements):
+        return capabilities.get('uuid', None) == requirements['uuid']
+
+    def receiveMsg_str(self, msg, sender):
+        print(msg)

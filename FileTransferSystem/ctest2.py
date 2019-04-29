@@ -10,15 +10,21 @@ from common import *
 import Actors
 import time
 import signal
+import uuid
 
-capabilities = {'Convention Address.IPv4': ('10.128.108.62', 2212), 'Admin Port': 2213}
+capabilities = {'Convention Address.IPv4': ('10.128.108.62', 2212), 'Admin Port': 2213, 'uuid': None}
 
 if __name__ == "__main__":
+    capabilities['uuid'] = uuid.uuid4().hex
     asys = ActorSystem('multiprocTCPBase', capabilities)
+    time.sleep(2)
+    rn = asys.createActor('Actors.RegistrarActor', {'uuid': capabilities['uuid']}, globalName='rnode')
+    asys.tell(rn, 'Hello String')
+    time.sleep(1)
     # la = asys.createActor(Actors.LogActor)
     # asys.tell(la,"init")
-    time.sleep(2)
+    # time.sleep(2)
     print("Shutting Down")
-    # asys.tell(la,ActorExitRequest)
+    asys.tell(rn, ActorExitRequest())
     time.sleep(3)
     asys.shutdown()
