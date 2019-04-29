@@ -14,15 +14,15 @@ class ConventionTests(unittest.TestCase):
         self.sys2_capabilities = None
         self.sys1_capabilities = None
 
-    def test_simple_message(self):
         print("Starting Main System")
         self.sys1_capabilities = {'Convention Address.IPv4': ('10.128.108.62', 2219), 'Admin Port': 2211}
-        self.sys1 = ActorSystem(capabilities=self.sys1_capabilities)
+        self.sys1 = ActorSystem('multiprocTCPBase', capabilities=self.sys1_capabilities)
 
         # Create the registrar on System 1 and send an Init Packet
         self.registrar = self.sys1.createActor('ConventionLead.Registrar')
         self.sys1.tell(self.registrar, messages.InitPacket())
-        time.sleep(5)
+
+    def test_simple_message(self):
         # Create System 2 and have it join the convention, this will force the registrar to create an actor on system2
         self.sys2_capabilities = {'Convention Address.IPv4': ('10.128.108.62', 2219), 'Admin Port': 2215,
                                   'uuid': uuid.uuid4().hex}
