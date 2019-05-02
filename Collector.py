@@ -14,10 +14,10 @@ import keyboard
 
 if __name__ == "__main__":
     freeze_support()
-    asys = ActorSystem('multiprocTCPBase')
+    #asys = ActorSystem('multiprocTCPBase')
     # asys = ActorSystem('multiprocUDPBase')
     # print("loading app")
-    # asys = ActorSystem('multiprocQueueBase')
+    asys = ActorSystem('multiprocQueueBase')
     app = KSApplication()
     app.add_actor("TriGraphHoldTimeActorNew")
     app.run()
