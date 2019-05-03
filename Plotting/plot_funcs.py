@@ -5,7 +5,7 @@ import numpy as np
 py.sign_in('jwelch1324', 'pzxu7DkSEfKysEA0MX9V')
 
 
-def plot_tri_matrix(holdkey_matrix, qtkey):
+def plot_tri_matrix(holdkey_matrix, qtkey, color='mean', plot_threshold=0):
     x = []
     y = []
     z = []
@@ -17,15 +17,23 @@ def plot_tri_matrix(holdkey_matrix, qtkey):
                 tt = np.array(khd.timings)
                 if len(tt) == 0:
                     continue
-                mean = tt.mean()
+                if color == 'mean':
+                    color_coord = tt.mean()
+                elif color == 'count':
+                    color_coord = len(tt)
+                else:
+                    color_coord = tt.mean()
+                if color_coord <= plot_threshold:
+                    continue
                 x.append(i)
                 y.append(j)
                 z.append(k)
-                c.append(mean)
+                c.append(color_coord)
 
     text = list(map(
-        lambda x: "({},{},{})<br>mean: {:.2f}".format(qtkey.get_key(x[0]), qtkey.get_key(x[1]), qtkey.get_key(x[2]),
-                                                      x[3]), zip(x, y, z, c)))
+        lambda x: "({},{},{})<br>{}: {:.2f}".format(qtkey.get_key(x[0]), qtkey.get_key(x[1]), qtkey.get_key(x[2]),
+                                                    color,
+                                                    x[3]), zip(x, y, z, c)))
     tvals = [i for i in range(38)]
     ttext = list(map(lambda x: qtkey.get_key(x), tvals))
     trace = go.Scatter3d(
@@ -71,3 +79,7 @@ def plot_tri_matrix(holdkey_matrix, qtkey):
 
     return go.Figure(data=data, layout=layout)
     # py.iplot(fig)
+
+
+def plot_count_matrix(holdkey_matrix, qtkey, threshold):
+    return plot_tri_matrix(holdkey_matrix, qtkey, 'count', threshold)
