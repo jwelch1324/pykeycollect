@@ -20,5 +20,6 @@ if __name__ == "__main__":
     asys = ActorSystem('multiprocQueueBase')
     app = KSApplication()
     app.add_actor("TriGraphHoldTimeActorNew")
+    app.add_actor("FullKeyLogActor")
     app.run()
     asys.shutdown()

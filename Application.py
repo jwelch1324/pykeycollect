@@ -106,7 +106,7 @@ class KSApplication(Actor):
                 print("Error: Actor Class {} not found".format(actor_name))
                 return
             
-        ActorSystem().tell(aref,{"load": "{}_hkm_data.npy".format(self.user)})
+        ActorSystem().tell(aref,{"load": "{}_data".format(self.user)})
         adata = {'actor':class_str, 'aref':aref}
         self.actors.append(adata)
 
@@ -115,7 +115,12 @@ class KSApplication(Actor):
         if not self.enabled:
             return
 
+        # This really should be done in the base keyboard library instead of here... but I didn't want to modify the base
+        # library so instead I simply set the key time event here... if it turns out there is too much jitter in the results
+        # we can change the base library so that the perf_counter call is closer to the actual OS keystroke event. However given that this runs as a
+        # separate actor that only collects the data it shouldn't be too bad.
         event.time = time.perf_counter()
+
         if event.event_type == "down":
             if event.scan_code in self.downKeys:
                 print("Held Key {}".format(event.scan_code))
@@ -142,7 +147,7 @@ class KSApplication(Actor):
             if (tend - tnow) > 15:
                 for actor in self.actors:
                     ActorSystem().tell(actor["aref"],
-                        {"save": "{}_hkm_data.npy".format(self.user)}
+                        {"save": "{}_data".format(self.user)}
                     )
                     ActorSystem().tell(actor["aref"],{"stats": None})
                 tnow = time.perf_counter()
@@ -156,7 +161,7 @@ class KSApplication(Actor):
         keyboard.unhook(self.__key_press_handler)
         # Tell all the actors to save their current data
         for actor in self.actors:
-            ActorSystem().tell(actor["aref"],{"save": "{}_hkm_data".format(self.user)})
+            ActorSystem().tell(actor["aref"],{"save": "{}_data".format(self.user)})
         time.sleep(3)  # Time to allow actors to save
         for actor in self.actors:
             ActorSystem().tell(actor["aref"], ActorExitRequest())  # Shutdown all actor threads

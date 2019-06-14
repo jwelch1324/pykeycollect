@@ -59,6 +59,52 @@ class DisplayNotificationActorNew(Actor):
             duration = message["duration"] if "duration" in message else 1
             _display_notification(title, text, icon_path, duration)
 
+class FullKeyLogActor(Actor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,**kwargs)
+        self.key_data = []
+        self.name = "FKL"
+        if 65 not in _os_keyboard.scan_code_to_vk:
+            print("Setting up VK Tables")
+            _os_keyboard.init()
+
+    def receiveMessage(self, message, sender):
+        if isinstance(message, dict):
+            if "kbe" in message:
+                e = message["kbe"]
+                if e.event_type == "up":
+                    e.event_type = "U"
+                elif e.event_type == "down":
+                    e.event_type = "D"
+                else:
+                    print("Unknown event")
+                    return
+                if e.scan_code < 0:
+                    # This happens e.g. when in a remote desktop session... for some reason it sends a -255 scan code
+                    # My guess is it is to notify the hook that it is losing ownership...?
+                    return
+                    # print(e.name, _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type)
+              #  self.key_collector.add_event(
+              #      _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
+              #  )
+                print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+
+            if "save" in message:
+                file_path = message["save"]
+                if not file_path.endswith('.csv'):
+                    file_path += '.csv'
+                file_path = "{}_{}".format(self.name,file_path)
+                #Open the output file
+                with open(file_path,'a') as f:
+                    for i in range(len(self.key_data)):
+                        kd = self.key_data[i]
+                        f.writelines(["{},{},{}\n".format(kd[0],kd[1],kd[2])])
+                self.key_data.clear()
+
+
+
+
 
 class TriGraphHoldTimeActorNew(Actor):
     def __init__(self, *args, **kwargs):
