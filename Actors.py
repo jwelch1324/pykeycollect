@@ -12,6 +12,7 @@ import platform
 
 # Platform Specific Configurations
 if platform.system() == "Windows":
+    print(_os_keyboard.scan_code_to_vk.keys())
     if platform.win32_ver()[0] == "10":
         import win10toast
 
@@ -21,7 +22,6 @@ if platform.system() == "Windows":
 else:
     toaster = None
 
-print(_os_keyboard.scan_code_to_vk.keys())
 
 
 def _display_notification(title, text, icon_path=None, duration=3):
@@ -64,9 +64,10 @@ class FullKeyLogActor(Actor):
         super().__init__(*args,**kwargs)
         self.key_data = []
         self.name = "FKL"
-        if 65 not in _os_keyboard.scan_code_to_vk:
-            print("Setting up VK Tables")
-            _os_keyboard.init()
+        if platform.system() == "Windows":
+            if 65 not in _os_keyboard.scan_code_to_vk:
+                print("Setting up VK Tables")
+                _os_keyboard.init()
 
     def receiveMessage(self, message, sender):
         if isinstance(message, dict):
@@ -87,8 +88,12 @@ class FullKeyLogActor(Actor):
               #  self.key_collector.add_event(
               #      _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
               #  )
-                print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
-                self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                if platform.system() == "Windows":
+                        print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                        self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                else:
+                        print(e.scan_code, e.event_type, e.time)
+                        self.key_data.append((e.scan_code, e.event_type, e.time))
 
             if "save" in message:
                 file_path = message["save"]
