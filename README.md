@@ -63,3 +63,22 @@ ScanCode, KeyName, Action, Time
 * Time is the micro-second resolution result of time.perf_counter() indicating the time since the app started when the keystroke event occured.
 
 The output file will appear in the same directory as the executable, so make sure you have write permissions to that directory... if running as an administrator then be aware that the output file will be owned by the admin account and permissions may need to be changed later.
+
+
+# Using the Keylog Cleaner
+If using the full keystroke logger actor, the output log may contain sensitive information that you want to filter out. For this purpose there is an included script ```cleaner.py``` which will help make this process easier. 
+
+## Setup the conda environment
+Using the keyclean.yml file you can setup a conda environment for this script. Since we don't want to include pandas in the main key logger executable, but we do use it in the cleaner we have to use a different environment
+
+```
+~/pykeycollect> conda env create -f keyclean.yml
+```
+
+Then activate the environment and run the script 
+```
+~/pykeycollect> conda activate keyclean
+(keyclean) ~/pykeycollect> python cleaner.py
+```
+
+You will be prompted for the path to the log file you want to clean, and then be asked for a particular phrase that you want to remove. Note that the removal is not intelligent. E.g. if you are removing a password, and you have mistyped a character, it will not remove the mistyped password. Therefore it is suggested that you try (in addition to the entire phrase you want to remove) parts of a phrase you want to remove as well. So if your password were apple123 you might want to try removing appel, apple, 132, etc... in addition to the password to ensure that you remove all traces of the phrase.
