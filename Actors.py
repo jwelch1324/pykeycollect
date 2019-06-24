@@ -91,6 +91,9 @@ class FullKeyLogActor(Actor):
                 if platform.system() == "Windows":
                         print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
                         self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                elif platform.system() == "Darwin":
+                        print(e.scan_code,_os_keyboard.name_from_scancode(e.scan_code),e.event_type, e.time)
+                        self.key_data.append((str(e.scan_code),_os_keyboard.name_from_scancode(e.scan_code),e.event_type, str(e.time)))
                 else:
                         print(e.scan_code, e.event_type, e.time)
                         self.key_data.append((e.scan_code, e.event_type, e.time))
@@ -104,7 +107,7 @@ class FullKeyLogActor(Actor):
                 with open(file_path,'a') as f:
                     for i in range(len(self.key_data)):
                         kd = self.key_data[i]
-                        f.writelines(["{},{},{}\n".format(kd[0],kd[1],kd[2])])
+                        f.writelines([",".join(kd) + "\n"])
                 self.key_data.clear()
 
 
