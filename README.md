@@ -49,7 +49,7 @@ If running on OSX you may get the following error message upon start
 This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection.
 
 ## Tray Icon
-Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper left corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or close the logger altogether. 
+Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper left corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or quit the logger. 
 
 ## Output file
 The current HEAD version of the repo has only the full keystroke logger enabled. This will generate a csv file with the following structure:
