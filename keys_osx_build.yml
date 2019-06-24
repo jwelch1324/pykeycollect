@@ -1,4 +1,4 @@
-name: keys_osx_build
+name: keys_build
 channels:
   - defaults
 dependencies:
@@ -140,5 +140,5 @@ dependencies:
     - setproctitle==1.1.10
     - six==1.12.0
     - thespian==3.9.9
-prefix: /Users/jwelch/miniconda3/envs/keys_osx_build
+prefix: /Users/jwelch/miniconda3/envs/keys_build
 
