@@ -61,3 +61,5 @@ ScanCode, KeyName, Action, Time
 * KeyName is the name of the key
 * Action is U or D for up or down
 * Time is the micro-second resolution result of time.perf_counter() indicating the time since the app started when the keystroke event occured.
+
+The output file will appear in the same directory as the executable, so make sure you have write permissions to that directory... if running as an administrator then be aware that the output file will be owned by the admin account and permissions may need to be changed later.
