@@ -1,6 +1,7 @@
 from thespian.actors import Actor
 from keyboard import KeyboardEvent
 from keyboard import _os_keyboard
+import time
 
 from thespian.actors import Actor, ActorSystem, ActorAddress, ActorExitRequest
 
@@ -71,6 +72,7 @@ class FullKeyLogActor(Actor):
         self.ksaref = None
         self.filtered = False
         self.active_app = ""
+        self.boot_time = time.time_ns()
         if platform.system() == "Windows":
             if 65 not in _os_keyboard.scan_code_to_vk:
                 print("Setting up VK Tables")
@@ -87,6 +89,7 @@ class FullKeyLogActor(Actor):
                         print(f"Filtered App [{message['app']}]")
                         return
                 e = message["kbe"]
+                e.time = (e.time*pow(10,9))+self.boot_time
                 if e.event_type == "up":
                     e.event_type = "U"
                 elif e.event_type == "down":
