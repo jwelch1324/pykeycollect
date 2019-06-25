@@ -5,6 +5,8 @@ import keyboard
 from threading import Event
 from Actors import *
 
+import configparser
+
 from thespian.actors import Actor, ActorSystem, ActorAddress, ActorExitRequest
 
 import platform
@@ -30,6 +32,15 @@ def on_activate(icon):
 def on_quit(icon):
     KSAPP.on_quit(icon)
 
+def getActiveApp():
+    if platform.system() == "Darwin":
+        active_app = NSWorkspace.sharedWorkspace().frontmostApplication()
+        if active_app is None:
+            print("No App Name Available!")
+        else:
+            return active_app.localizedName()
+    else:
+        return None
 
 class KSApplication(Actor):
     def __init__(self):
@@ -58,9 +69,33 @@ class KSApplication(Actor):
         self.dnaref = ActorSystem().createActor(DisplayNotificationActorNew, globalName="DisplayNotification")
         self.datastore = ActorSystem().createActor(DataStoreActor, globalName="DataStore")
         self.downKeys = {}
+        self.filters = []
         # Ugly hack that needs to be fixed eventually
         global KSAPP
         KSAPP = self
+
+
+        if os.path.exists('filters.ini'):
+            #Load the config file to get the filtered apps
+            cfg = configparser.ConfigParser()
+            cfg.read("filters.ini")
+
+            if 'Filters' in cfg:
+                if 'Apps' in cfg['Filters']:
+                    apps = cfg['Filters']['Apps']
+                    apps = list(map(lambda x: x.strip(),apps.split(',')))
+
+                    for a in apps:
+                        if a == '':
+                            continue
+                        self.filters.append(a)
+        else:
+            cfg = configparser.ConfigParser()
+            cfg['Filters'] = {'Apps':''}
+            with open('filters.ini','w') as cfile:
+                cfg.write(cfile)
+
+
 
     def on_activate(self, icon):
         self.enabled = not self.enabled
@@ -92,6 +127,7 @@ class KSApplication(Actor):
         dc.rectangle((width // 2, 0, width, height // 2), fill=color)
         dc.rectangle((0, height // 2, width // 2, height), fill=color)
         return image
+        
 
     def add_actor(self, actor_name):     
         class_str = actor_name
@@ -107,6 +143,8 @@ class KSApplication(Actor):
                 return
             
         ActorSystem().tell(aref,{"load": "{}_data".format(self.user)})
+        for f in self.filters:
+            ActorSystem().tell(aref,{"filter_app":f})
         adata = {'actor':class_str, 'aref':aref}
         self.actors.append(adata)
 
@@ -132,7 +170,7 @@ class KSApplication(Actor):
                 del self.downKeys[event.scan_code]
 
         for actor in self.actors:
-            ActorSystem().tell(actor['aref'],{"kbe": event})
+            ActorSystem().tell(actor['aref'],{"kbe": event,"app":getActiveApp()})
 
     def __runLoop(self, icon):
         icon.visible = True

@@ -2,6 +2,8 @@ from thespian.actors import Actor
 from keyboard import KeyboardEvent
 from keyboard import _os_keyboard
 
+from thespian.actors import Actor, ActorSystem, ActorAddress, ActorExitRequest
+
 # from KeyEventParser import TriGraphDataCollector, vkconvert
 import KeyEventParser
 from KeyEventParser import vkconvert
@@ -22,7 +24,8 @@ if platform.system() == "Windows":
 else:
     toaster = None
 
-
+if platform.system() == "Darwin":
+    from AppKit import NSWorkspace
 
 def _display_notification(title, text, icon_path=None, duration=3):
     if toaster is not None:
@@ -64,14 +67,25 @@ class FullKeyLogActor(Actor):
         super().__init__(*args,**kwargs)
         self.key_data = []
         self.name = "FKL"
+        self.filter_apps = []
+        self.ksaref = None
+        self.filtered = False
+        self.active_app = ""
         if platform.system() == "Windows":
             if 65 not in _os_keyboard.scan_code_to_vk:
                 print("Setting up VK Tables")
                 _os_keyboard.init()
 
+    def getActiveApp():
+        return self.active_app
+
     def receiveMessage(self, message, sender):
         if isinstance(message, dict):
             if "kbe" in message:
+                if message['app'] is not None:
+                    if message['app'] in self.filter_apps:
+                        print(f"Filtered App [{message['app']}]")
+                        return
                 e = message["kbe"]
                 if e.event_type == "up":
                     e.event_type = "U"
@@ -92,7 +106,7 @@ class FullKeyLogActor(Actor):
                         print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
                         self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
                 elif platform.system() == "Darwin":
-                        print(e.scan_code,_os_keyboard.name_from_scancode(e.scan_code),e.event_type, e.time)
+                        print("[{}] {} {} {} {}".format(message['app'], e.scan_code,_os_keyboard.name_from_scancode(e.scan_code),e.event_type, e.time))
                         self.key_data.append((str(e.scan_code),_os_keyboard.name_from_scancode(e.scan_code),e.event_type, str(e.time)))
                 else:
                         print(e.scan_code, e.event_type, e.time)
@@ -110,6 +124,16 @@ class FullKeyLogActor(Actor):
                         f.writelines([",".join(kd) + "\n"])
                 self.key_data.clear()
 
+            if 'filter_app' in message:
+                appname = message['filter_app']
+                print(f"Added Filter for app {appname}")
+                self.ksaref = sender
+                self.filter_apps.append(appname)
+
+
+            if 'ksapp_ref' in message:
+                self.ksaref = message['ksapp_ref']
+
 
 
 
@@ -120,6 +144,7 @@ class TriGraphHoldTimeActorNew(Actor):
         self.key_collector = KeyEventParser.TriGraphDataCollector()
         self.name = "TGHT"
         self.configured = False
+        self.ksaref = None
         if 65 not in _os_keyboard.scan_code_to_vk:
             print("Setting up VK Tables")
             _os_keyboard.init()
@@ -167,3 +192,6 @@ class TriGraphHoldTimeActorNew(Actor):
 
             if "stats" in message:
                 self.key_collector.print_stats()
+
+            if 'ksapp_ref' in message:
+                self.ksaref = message['ksapp_ref']
