@@ -82,3 +82,38 @@ Then activate the environment and run the script
 ```
 
 You will be prompted for the path to the log file you want to clean, and then be asked for a particular phrase that you want to remove. Note that the removal is not intelligent. E.g. if you are removing a password, and you have mistyped a character, it will not remove the mistyped password. Therefore it is suggested that you try (in addition to the entire phrase you want to remove) parts of a phrase you want to remove as well. So if your password were apple123 you might want to try removing appel, apple, 132, etc... in addition to the password to ensure that you remove all traces of the phrase.
+
+# Filtering Apps
+* Currently this feature is only supported on OSX
+
+If you want to prevent the key logger from registering keystrokes from certain apps (i.e. chat clients/email programs etc...) you can use the filters.ini file to specify a list of apps to filter on. If you do not know the name of the app you can simply use the Collector to determine it by running the program and typing some keys with the app you want to filter as the active application. The collector terminal will display the name of the app that it is receiving keystrokes on each line it gets an event from
+
+```
+[Safari] 46 m U 167.222946055
+```
+
+Then to filter on this app you just need to add a filters.ini file in the same directory as the exectuable with the following structure
+```filters.ini
+[Filters]
+apps = Safari,Slack,Mail
+```
+
+Note: App Names are case sensitive
+
+When the app first loads you should see a line like the following for each app in the list
+```
+Added Filter for app Safari
+Added Filter for app Slack
+Added Filter for app Mail
+```
+
+When typing in a filtered app, instead of seeing the keystroke data you will instead see
+```
+Filtered App [Slack]
+Filtered App [Slack]
+Filtered App [Slack]
+Filtered App [Slack]
+```
+
+This indicates that the keystroke data is not being collected.
+
