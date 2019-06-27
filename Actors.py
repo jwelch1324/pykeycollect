@@ -106,8 +106,10 @@ class FullKeyLogActor(Actor):
               #      _os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time
               #  )
                 if platform.system() == "Windows":
-                        print((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
-                        self.key_data.append((_os_keyboard.scan_code_to_vk[e.scan_code], e.event_type, e.time))
+                        vk_code = _os_keyboard.scan_code_to_vk[e.scan_code]
+                        key_name = (_os_keyboard.official_virtual_keys[vk_code])[0] if vk_code in _os_keyboard.official_virtual_keys else ''
+                        print(e.scan_code, key_name, e.event_type, e.time)
+                        self.key_data.append((str(e.scan_code),key_name, e.event_type, str(e.time)))
                 elif platform.system() == "Darwin":
                         print("[{}] {} {} {} {}".format(message['app'], e.scan_code,_os_keyboard.name_from_scancode(e.scan_code),e.event_type, e.time))
                         self.key_data.append((str(e.scan_code),_os_keyboard.name_from_scancode(e.scan_code),e.event_type, str(e.time)))
