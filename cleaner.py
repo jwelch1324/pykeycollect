@@ -82,7 +82,28 @@ if __name__ == "__main__":
         print(f"ERROR: Unable to locate log at {path}!")
         exit(0)
 
-    keydata = pd.read_csv(path,header=None,names=['ScanCode','Name','Action','Time'])
+
+    #We need to do one preprocessing step where we search for scancode 43 and replace the second comma in the line with the word 'comma'
+    contents = []
+    with open(path,'r') as file:
+        contents = file.readlines()
+
+    def fix_43(line):
+        retval = line
+        if retval.startswith('43'):
+            sl = list(line)
+            sl[3] = 'comma'
+            retval = ''.join(sl)
+        return retval
+
+    lines = list(map(fix_43,contents))
+
+    with open('temp.csv','w') as file:
+        file.writelines(lines)
+
+
+    keydata = pd.read_csv('temp.csv',header=None,names=['ScanCode','Name','Action','Time'])
+    os.remove('temp.csv')
     unique_keys = keydata['Name'].unique()
 
     #The typical rolling window in pandas doesn't work on strings
