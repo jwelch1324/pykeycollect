@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
 
 #res = downdf['keycode'].rolling(window=len(s1)).apply(lambda x: True if np.all(x == s1) else False,raw=True)
 #res2=list(map(lambda x: True if x == 1.0 else False,res))
@@ -12,8 +13,19 @@ def remove_sequences(seq:str,keymap):
     ss = list(seq)
     s1 = list(map(lambda x: keymap[x],seqToKeySeq(ss)))
 
+    keymap[float('nan')] = 54
+
     downdf = keydata[keydata['Action'] == 'U'].copy()
-    downdf['PName'] = list(map(lambda x: 'shift' if 'shift' in x else x,downdf['Name']))
+    def shift_map(x):
+        xp = x.Name
+        try:
+            return 'shift' if 'shift' in xp else xp
+        except TypeError:
+            print(x)
+            if xp != xp:
+                return 'command'
+
+    downdf['PName'] = list(map(shift_map,downdf.itertuples()))
 
     #for the sake of this simple filter, we will ignore all command keys
     downdf = downdf[list(map(lambda x: x not in ['shift','command','esc','tab','up','down','right','left','enter','delete'],downdf['PName']))]
@@ -60,8 +72,11 @@ def seqToKeySeq(iseq:str):
 
 
 if __name__ == "__main__":
-    print("Enter the path to the log file you wish to filter")
-    path = input(">")
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+    else:
+        print("Enter the path to the log file you wish to filter")
+        path = input(">")
     
     if not os.path.isfile(path):
         print(f"ERROR: Unable to locate log at {path}!")
@@ -78,7 +93,7 @@ if __name__ == "__main__":
     specialCharsKey = list('1234567890-=[]\\;\',./')
     specialKeyMap = {specialChars[i]:specialCharsKey[i] for i in range(len(specialChars))}
 
-
+    print(f"found {len(keydata)} keystrokes")
     run = True
     while run:
         print("Enter a sequence of characters you wish to filter from the logs, or type <<% to stop")
