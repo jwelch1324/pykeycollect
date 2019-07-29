@@ -108,11 +108,22 @@ class FullKeyLogActor(Actor):
                 if platform.system() == "Windows":
                         vk_code = _os_keyboard.scan_code_to_vk[e.scan_code]
                         key_name = (_os_keyboard.official_virtual_keys[vk_code])[0] if vk_code in _os_keyboard.official_virtual_keys else ''
+                        
+                        #Fix the comma logging issue
+                        if key_name == ',':
+                            key_name = 'comma'
+
                         print(e.scan_code, key_name, e.event_type, e.time)
                         self.key_data.append((str(e.scan_code),key_name, e.event_type, str(e.time)))
                 elif platform.system() == "Darwin":
                         print("[{}] {} {} {} {}".format(message['app'], e.scan_code,_os_keyboard.name_from_scancode(e.scan_code),e.event_type, e.time))
-                        self.key_data.append((str(e.scan_code),_os_keyboard.name_from_scancode(e.scan_code),e.event_type, str(e.time)))
+                        key_name = _os_keyboard.name_from_scancode(e.scan_code)
+                        
+                        #Fix comma issue
+                        if key_name == ',':
+                            key_name = 'comma'
+                        
+                        self.key_data.append((str(e.scan_code),key_name,e.event_type, str(e.time)))
                 else:
                         print(e.scan_code, e.event_type, e.time)
                         self.key_data.append((e.scan_code, e.event_type, e.time))

@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     def fix_43(line):
         retval = line
-        if retval.startswith('43'):
+        if retval.startswith('43,,'):
             sl = list(line)
             sl[3] = 'comma'
             retval = ''.join(sl)
