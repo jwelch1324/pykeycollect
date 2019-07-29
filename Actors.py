@@ -126,6 +126,9 @@ class FullKeyLogActor(Actor):
                 with open(file_path,'a') as f:
                     for i in range(len(self.key_data)):
                         kd = self.key_data[i]
+                        if kd is None:
+                            print("Skipping key due to none type...")
+                            continue
                         f.writelines([",".join(kd) + "\n"])
                 self.key_data.clear()
 
@@ -138,9 +141,6 @@ class FullKeyLogActor(Actor):
 
             if 'ksapp_ref' in message:
                 self.ksaref = message['ksapp_ref']
-
-
-
 
 
 class TriGraphHoldTimeActorNew(Actor):
