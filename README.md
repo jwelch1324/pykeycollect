@@ -46,7 +46,10 @@ If running on OSX you may get the following error message upon start
 ... is calling TIS/TSM in non-main thread environment, ERROR : This is NOT allowed. Please call TIS/TSM in main thread!!!
 ```
 
-This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection.
+This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection. 
+
+## IMPORTANT NOTE FOR OSX
+Do not close the terminal while running! If you close the terminal while running the collector, it will kill the main thread and will not push updates to the log. 
 
 ## Tray Icon
 Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper left corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or quit the logger. 
