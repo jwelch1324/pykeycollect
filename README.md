@@ -83,6 +83,10 @@ Then activate the environment and run the script
 
 You will be prompted for the path to the log file you want to clean, and then be asked for a particular phrase that you want to remove. Note that the removal is not intelligent. E.g. if you are removing a password, and you have mistyped a character, it will not remove the mistyped password. Therefore it is suggested that you try (in addition to the entire phrase you want to remove) parts of a phrase you want to remove as well. So if your password were apple123 you might want to try removing appel, apple, 132, etc... in addition to the password to ensure that you remove all traces of the phrase.
 
+## Known Bug with Key Cleaner
+
+Currently the key cleaner will hang if you attempt to remove a key sequence that begins with a special character, this is due to the way that the shift key is handled. It is a known bug and it is recommended that if you need to remove a sequence that starts with a special character then the best solution is to simply drop the special characters and remove part of the sequence. Not ideal but until someone fixes the issue it is better than leaving in the entire sequence intact.
+
 # Filtering Apps
 * Currently this feature is only supported on OSX
 
