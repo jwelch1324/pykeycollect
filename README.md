@@ -48,8 +48,10 @@ If running on OSX you may get the following error message upon start
 
 This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection. 
 
-## IMPORTANT NOTE FOR OSX
-Do not close the terminal while running! If you close the terminal while running the collector, it will kill the main thread and will not push updates to the log. 
+## IMPORTANT NOTES FOR OSX
+1. Do not close the terminal while running! If you close the terminal while running the collector, it will kill the main thread and will not push updates to the log. 
+
+2. When Closing the app, do not close the terminal, but instead use the tray icon and select quit. This will do a clean shutdown of all actors and save any data that is still in the buffer to the appropriate output files.
 
 ## Tray Icon
 Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper right corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or quit the logger. 
