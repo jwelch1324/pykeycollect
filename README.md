@@ -46,10 +46,15 @@ If running on OSX you may get the following error message upon start
 ... is calling TIS/TSM in non-main thread environment, ERROR : This is NOT allowed. Please call TIS/TSM in main thread!!!
 ```
 
-This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection.
+This can be safely ignored for the time being, it is a known bug but it does not interfere with keystroke collection. 
+
+## IMPORTANT NOTES FOR OSX
+1. Do not close the terminal while running! If you close the terminal while running the collector, it will kill the main thread and will not push updates to the log. 
+
+2. When Closing the app, do not close the terminal, but instead use the tray icon and select quit. This will do a clean shutdown of all actors and save any data that is still in the buffer to the appropriate output files.
 
 ## Tray Icon
-Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper left corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or quit the logger. 
+Once the logger is started, a tray icon with a green/black checkered icon will show up in your system tray (windows) or in the upper right corner status tray (OSX). Clicking this icon (right click on windows) will bring up a context menu which allows you to enable/disable the logger, or quit the logger. 
 
 ## Output file
 The current HEAD version of the repo has only the full keystroke logger enabled. This will generate a csv file with the following structure:
@@ -82,6 +87,10 @@ Then activate the environment and run the script
 ```
 
 You will be prompted for the path to the log file you want to clean, and then be asked for a particular phrase that you want to remove. Note that the removal is not intelligent. E.g. if you are removing a password, and you have mistyped a character, it will not remove the mistyped password. Therefore it is suggested that you try (in addition to the entire phrase you want to remove) parts of a phrase you want to remove as well. So if your password were apple123 you might want to try removing appel, apple, 132, etc... in addition to the password to ensure that you remove all traces of the phrase.
+
+## Known Bug with Key Cleaner
+
+Currently the key cleaner will hang if you attempt to remove a key sequence that begins with a special character, this is due to the way that the shift key is handled. It is a known bug and it is recommended that if you need to remove a sequence that starts with a special character then the best solution is to simply drop the special characters and remove part of the sequence. Not ideal but until someone fixes the issue it is better than leaving in the entire sequence intact.
 
 # Filtering Apps
 * Currently this feature is only supported on OSX
