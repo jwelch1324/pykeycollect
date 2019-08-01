@@ -11,7 +11,13 @@ def remove_sequences(seq:str,keymap):
     #We will sweep a rolling window over the name column
     #searching for the sequence of characters that we are looking for
     ss = list(seq)
-    s1 = list(map(lambda x: keymap[x],seqToKeySeq(ss)))
+    kSeq = seqToKeySeq(ss)
+    for k in kSeq:
+        if k not in keymap:
+            print(f"Key {k} not present in file, no occurance of this sequence is present")
+            return
+
+    s1 = list(map(lambda x: keymap[x],kSeq))
 
     keymap[float('nan')] = 54
 
